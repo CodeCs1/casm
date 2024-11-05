@@ -88,8 +88,7 @@ void AppendToken_Pointer2Pointer(Token_t* p1, Token_t* p2) {
     Token_t* tmp = p1;
     while(tmp->next != NULL) tmp = tmp->next;
     tmp->next = p2;
-}   
-
+}
 int main(int argc, char** argv) {
     //setting up command args
     atexit(exit_func);
@@ -124,15 +123,19 @@ int main(int argc, char** argv) {
         return -1;
     }
     fseek(f,1,SEEK_CUR);
-    line = 1;
     Token_t* tok= malloc(sz);
     while(fgets(s, sz, f)) {
         TokenInit(s, t.inf);
         Token_t* tmp = Scan();
         AppendToken_Pointer2Pointer(tok, tmp);
-        line++;
+        IncreaseLine();
     }
+    AddEndEOF(tok);
     while(tok != NULL) {
+        if (tok->Key==NULL) {
+            tok = tok->next;
+            continue;
+        }
         printf("Token Type -> %i\n", tok->t);
         tok = tok->next;
     }

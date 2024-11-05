@@ -18,7 +18,6 @@ typedef enum {
 }TokenType;
 
 static int exit_code;
-static int line;
 
 
 struct Token_t {
@@ -34,3 +33,4 @@ void TokenInit(char* sources, char* file);
 // Scan sources
 Token_t* Scan();
 void AddEndEOF(Token_t* token);
+void IncreaseLine();
