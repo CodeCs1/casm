@@ -1,0 +1,31 @@
+$casm
+
+/*
+    This code here is used for an
+    example file for real mode
+    test
+*/
+
+place 7C00h
+arch 16
+
+test(a) [
+    cx <- a
+    inc cx
+    ret
+]
+
+
+main [
+    // setup stack
+    ax <- 0
+    ax <- ds
+    ax <- es
+    ss <- ax
+    sp <- 7C00h
+
+    hlt
+]
+
+loop 510-($-$$) => 0
+dw 0AA55h

@@ -1,0 +1,6 @@
+casm
+Testing/
+CMakeFiles
+*.cmake
+Makefile
+CMakeCache.txt
