@@ -83,11 +83,11 @@ void exit_func() {
 
 int countAppend=0;
 
-void AppendToken_Pointer2Pointer(Token_t* input, Token_t* output, size_t sz) {
-    for (int i=0;i<sz;i++) {
-        output[countAppend] = input[i];
-        countAppend++;
-    }
+void AppendToken_Pointer2Pointer(Token_t* p1, Token_t* p2) {
+    if (p1 == NULL) { p1=p2; return; }
+    Token_t* tmp = p1;
+    while(tmp->next != NULL) tmp = tmp->next;
+    tmp->next = p2;
 }   
 
 int main(int argc, char** argv) {
@@ -124,11 +124,12 @@ int main(int argc, char** argv) {
         return -1;
     }
     fseek(f,1,SEEK_CUR);
+    line = 1;
     Token_t* tok= malloc(sz);
     while(fgets(s, sz, f)) {
         TokenInit(s, t.inf);
-        tok = Scan();
-        tok = tok->next;
+        Token_t* tmp = Scan();
+        AppendToken_Pointer2Pointer(tok, tmp);
         line++;
     }
     while(tok != NULL) {

@@ -18,7 +18,7 @@ typedef enum {
 }TokenType;
 
 static int exit_code;
-static int line=1;
+static int line;
 
 
 struct Token_t {
