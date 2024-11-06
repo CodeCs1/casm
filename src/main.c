@@ -1,3 +1,4 @@
+#include "parse.h"
 #include <stddef.h>
 #include <time.h>
 #include <stdlib.h>
@@ -131,6 +132,7 @@ int main(int argc, char** argv) {
         IncreaseLine();
     }
     AddEndEOF(tok);
+    /*
     while(tok != NULL) {
         if (tok->Key==NULL) {
             tok = tok->next;
@@ -138,7 +140,8 @@ int main(int argc, char** argv) {
         }
         printf("Token Type -> %i\n", tok->t);
         tok = tok->next;
-    }
+    }*/
+    parseAST(tok);
 
     clock_t end = clock();
     time_spent = (double)(end-begin)/CLOCKS_PER_SEC;

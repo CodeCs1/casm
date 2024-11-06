@@ -8,6 +8,14 @@
 static char* code;
 const char* filename;
 
+
+
+static const char* Keywords[] = {
+    "loop", "dw", "hlt", "cli",
+    "arch", "place"
+};
+
+
 int line=2;
 int countNumber(int input) {
     int res = 0;
@@ -88,6 +96,38 @@ uint8_t isOctal(char exp) {
     return exp >='0' && exp <= '7';
 }
 
+uint64_t getHex(char exp) {
+    switch(exp) {
+        case 'a': case 'A': return 10;
+        case 'b': case 'B': return 11;
+        case 'c': case 'C': return 12;
+        case 'd': case 'D': return 13;
+        case 'e': case 'E': return 14;
+        case 'f': case 'F': return 15;
+        case '0': return 0;
+        case '1': return 1;
+        case '2': return 2;
+        case '3': return 3;
+        case '4': return 4;
+        case '5': return 5;
+        case '6': return 6;
+        case '7': return 7;
+        case '8': return 8;
+        case '9': return 9;
+    }
+    return 0;
+}
+
+uint64_t base2dec(char* str, int base) {
+    uint64_t digit = 1;
+    uint64_t output=0;
+    for (int i=strlen(str)-1; i >= 0; i--) {
+        output += getHex(str[i])*digit;
+        digit *=base;
+    }
+    return output;
+}
+
 char* substr(char* str, uint32_t start, uint32_t end) {
     char* t1 = &str[start];
     char* t2 = &str[end];
@@ -131,9 +171,14 @@ Token_t* Scan() {
                 token = AddToken(token, STAR, "STAR");
                 break;
             case '=':
-                uint8_t e = match('=');
-                token = AddToken(token,
-                e ? EQUAL_EQUAL : EQUAL , e ? "EQ2" : "EQ");
+                if (match('=')) {
+                    token = AddToken(token, EQUAL_EQUAL ,"EQ2");
+                }
+                else if (match('>')) {
+                    token = AddToken(token, LAMBDA ,"LMDA");
+                } else {
+                    token = AddToken(token, EQUAL ,"EQ");
+                }
                 break;
             case '/':
                 if (match('/')) {
@@ -144,10 +189,18 @@ Token_t* Scan() {
                 break;
             case '<':
                 if (match('-')) {
-                    token = AddToken(token, POINTER, "POTR");
-                }
-                else {
+                    token = AddToken(token, POINTER, "PTR");
+                } else if (match('=')) {
+                    token = AddToken(token, LESS_EQUAL, "LEQ");
+                } else {
                     token = AddToken(token, LESS, "LS");
+                }
+                break;
+            case '>':
+                if (match('=')) {
+                    token = AddToken(token, GREATER_EQUAL, "GEQ");
+                } else {
+                    token = AddToken(token, GREATER, "GR");
                 }
                 break;
             case '"':
@@ -166,17 +219,16 @@ Token_t* Scan() {
                 switch(nextChar()) {
                     case 'h': 
                         while(!IsAtEnd() && isHex(peek())) nextChar();
-                        printf("HEX: %s\n", substr(code, start+2, curr));
+                        token = AddToken(token, NUMBER,substr(code, start+2, curr));
                         break; //Hex
                     case 'b':
                         while(!IsAtEnd() && isBin(peek())) nextChar();
-                        printf("BIN: %s\n", substr(code, start+2, curr));
+                        token = AddToken(token, NUMBER,substr(code, start+2, curr));
                         break; //Binary
                     case 'o': 
                         while(!IsAtEnd() && isOctal(peek())) nextChar();
-                        printf("OCTAL: %s\n", substr(code, start+2, curr));
+                        token = AddToken(token, NUMBER,substr(code, start+2, curr));
                         break; //octal
-                    case 'd': break; //decimal
                 }
                 break;
             case ' ':
@@ -192,7 +244,21 @@ Token_t* Scan() {
                         while(isdigit(peek())) nextChar();
                     }
                     token=AddToken(token, NUMBER,  substr(code, start, curr));
-                }else {
+                } else if (isalpha(c)) {
+                    while(isalnum(peek())) nextChar();
+                    char* t = substr(code,start,curr);
+                    int i=0;
+                    for (i=0;i<6;i++) {
+                        if (strcmp(t,Keywords[i])==0) {
+                            token = AddToken(token, KEYWORDS, t);
+                            break;
+                        }
+                    }
+                    if (i >= 6) {
+                        token = AddToken(token, IDENTIFIER, t);
+                    }
+                    
+                } else {
                     ErrorReport(line, curr, 0, "Unexpect character.");
                 }
                 break;

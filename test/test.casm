@@ -1,12 +1,10 @@
 $casm
 
-/*
-    This code here is used for an
-    example file for real mode
-    test
-*/
+// This code here is used for an
+// example file for real mode
+// test.
 
-place 7C00h
+place :h7C00
 arch 16
 
 test(a) [
@@ -27,5 +25,6 @@ main [
     hlt
 ]
 
-loop 510-($-$$) => 0
-dw 0AA55h
+//loop 510-($-$$) => 0
+loop 512 => 0
+dw :hAA55
