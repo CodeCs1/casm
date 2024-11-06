@@ -7,7 +7,7 @@ The compiler just compiled in tokenizing file.
 #### This project uses cmake for building and installing this.
 To start building, simplely running
 ```sh
-cmake; make
+cmake . && make
 ```
 To run test, run:
 ```sh
@@ -35,7 +35,7 @@ main [
     ax <- ds
     ax <- es
     ss <- ax
-    sp <- 0h7C00
+    sp <- :h7C00
 
     hlt
 ]
