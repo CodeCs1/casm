@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
+set(CMAKE_DEBUG_POSTFIX d)
 project(casm)
-set(CMAKE_MODULE_PATH "cmake-modules")
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
 find_package(argp REQUIRED)
 if (NOT ARGP_FOUND)
     message(FATAL_MESSAGE "ARGP not found!")

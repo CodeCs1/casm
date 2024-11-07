@@ -20,7 +20,7 @@ main [
     ax <- ds
     ax <- es
     ss <- ax
-    sp <- 7C00h
+    sp <- :h7C00
 
     hlt
 ]

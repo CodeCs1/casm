@@ -14,6 +14,24 @@ static const char* Keywords[] = {
     "loop", "dw", "hlt", "cli",
     "arch", "place"
 };
+static const char* Registers[] = {
+    // upper case
+    "AL","CL","DL","BL",
+    "AH","CH","DH","BH",
+    "AX","CX","DX", "BX", 
+    "SP","BP","SI","DI",
+    "EAX", "ECX", "EDX", 
+    "EBX", "ESP", "EBP","ESI", 
+    "EDI", "ES", "CS", "SS", "DS",
+    //lower case
+    "al","cl","dl","bl",
+    "ah","ch","dh","bh",
+    "ax","cx","dx", "bx", 
+    "sp","bp","si","di",
+    "eax", "ecx", "edx", 
+    "ebx", "esp", "ebp","esi", 
+    "edi", "es", "cs", "ss", "ds"
+};
 
 
 int line=2;
@@ -73,7 +91,7 @@ Token_t* AddToken(Token_t* t, TokenType type, char* key) {
 }
 
 void AddEndEOF(Token_t* token) {
-    AddToken(token, _EOF_, " ");
+    AddToken(token, _EOF_, "EOF");
 }
 
 char peek() {
@@ -190,9 +208,11 @@ Token_t* Scan() {
             case '<':
                 if (match('-')) {
                     token = AddToken(token, POINTER, "PTR");
-                } else if (match('=')) {
+                } 
+                else if (match('=')) {
                     token = AddToken(token, LESS_EQUAL, "LEQ");
-                } else {
+                } 
+                else {
                     token = AddToken(token, LESS, "LS");
                 }
                 break;
@@ -214,6 +234,11 @@ Token_t* Scan() {
                 nextChar();
                 printf("STRING: %s\n", substr(code, start+1, curr-1));
                 token = AddToken(token, STRING, substr(code, start+1, curr-1));
+                break;
+            case '&':
+                nextChar();
+                token = AddToken(token, STACK, substr(code, start, curr));
+                nextChar(); // =)
                 break;
             case ':':
                 switch(nextChar()) {
@@ -248,13 +273,19 @@ Token_t* Scan() {
                     while(isalnum(peek())) nextChar();
                     char* t = substr(code,start,curr);
                     int i=0;
-                    for (i=0;i<6;i++) {
-                        if (strcmp(t,Keywords[i])==0) {
-                            token = AddToken(token, KEYWORDS, t);
+                    for (i=0;i<56;i++) {
+                        if (i < 6) {
+                            if (strcmp(t,Keywords[i])==0) {
+                                token = AddToken(token, KEYWORDS, t);
+                                break;
+                            }
+                        }
+                        if (strcmp(t, Registers[i])==0) {
+                            token = AddToken(token, REGISTERS, t);
                             break;
                         }
                     }
-                    if (i >= 6) {
+                    if (i >= 62) {
                         token = AddToken(token, IDENTIFIER, t);
                     }
                     

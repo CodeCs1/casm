@@ -1,4 +1,7 @@
-#include "parse.h"
+/*
+    CASM (Code-dev's Assembly language)
+    Used to learn about lower level thing.
+*/
 #include <stddef.h>
 #include <time.h>
 #include <stdlib.h>
@@ -9,6 +12,7 @@
 
 //user define
 #include <token.h>
+#include <parse.h>
 
 const char* argp_program_version="1.0-beta";
 
@@ -90,6 +94,8 @@ void AppendToken_Pointer2Pointer(Token_t* p1, Token_t* p2) {
     while(tmp->next != NULL) tmp = tmp->next;
     tmp->next = p2;
 }
+
+
 int main(int argc, char** argv) {
     //setting up command args
     atexit(exit_func);
@@ -132,16 +138,33 @@ int main(int argc, char** argv) {
         IncreaseLine();
     }
     AddEndEOF(tok);
-    /*
+/*
     while(tok != NULL) {
-        if (tok->Key==NULL) {
+        if (tok->Key == NULL) {
             tok = tok->next;
             continue;
         }
-        printf("Token Type -> %i\n", tok->t);
+        printf("TokenType: %i & key: %s\n", tok->t, tok->Key);
         tok = tok->next;
     }*/
-    parseAST(tok);
+
+    InitparseAST(tok);
+    Expr* ex = parseAST();
+    while(ex != NULL) {
+        if (ex->Literal != NULL) {
+            printf("Literal: %s\n", ex->Literal->Literal);
+            break;
+        }
+        if (ex->moveinstr != NULL) {
+            printf("Here\n");
+            break;
+        }
+        if (ex->binop != NULL) {
+            printf("Here BinOP");
+            break;
+        }
+        ex = ex->next;
+    }
 
     clock_t end = clock();
     time_spent = (double)(end-begin)/CLOCKS_PER_SEC;
