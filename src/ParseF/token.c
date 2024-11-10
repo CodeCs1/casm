@@ -48,7 +48,7 @@ int countNumber(int input) {
 void ErrorReport(uint32_t line, uint32_t where,
 uint32_t err_no, char* err_mess) {
     printf("Error %i (%s:%i:%i): %s\n", err_no, filename,line,where, err_mess);
-    printf("%i | %s\n", line, code);
+    printf("%i | %s", line, code);
     for (int i = 0;i<countNumber(line)+3+(where-1);i++) printf(" ");
     printf("^\n");
     exit_code=-1;

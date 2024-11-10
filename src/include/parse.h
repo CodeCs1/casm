@@ -8,6 +8,7 @@ enum Registers {
     AX,CX,DX,BX,SP,BP,SI,DI,/* 16 bits regs*/
     EAX,ECX,EDX,EBX,ESP,EBP,ESI,EDI, /* 32 bits regs */
     ES,CS,SS,DS, /*Segment*/
+    Unknown
 };
 
 struct BinOp {

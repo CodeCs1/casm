@@ -138,38 +138,23 @@ int main(int argc, char** argv) {
         IncreaseLine();
     }
     AddEndEOF(tok);
-
-    //forward
-    while(tok != NULL) {
-        if (!tok->Key) {
-            tok = tok->next;
-            continue;
-        }
-        if (tok->prev->prev) {
-            printf("Previous node: %i & key: %s\n", tok->prev->prev->t, tok->prev->prev->Key);
-        }
-        printf("TokenType: %i & key: %s\n", tok->t, tok->Key);
-        tok = tok->next;
-    }
+    tok = tok->next; // We don't care the first element =)
     // revered
 
-    /*InitparseAST(tok);
+    InitparseAST(tok);
     Expr* ex = parseAST();
     while(ex != NULL) {
         if (ex->Literal != NULL) {
             printf("Literal: %s\n", ex->Literal->Literal);
-            break;
         }
         if (ex->moveinstr != NULL) {
-            printf("Here\n");
-            break;
+            printf("register: %i\n", ex->moveinstr->regs);
         }
         if (ex->binop != NULL) {
             printf("Here BinOP");
-            break;
         }
         ex = ex->next;
-    }*/
+    }
 
     clock_t end = clock();
     time_spent = (double)(end-begin)/CLOCKS_PER_SEC;

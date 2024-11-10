@@ -17,97 +17,67 @@ int currAST = 0;
 int countAST = 0;
 Token_t* tok;
 
-//Print move instruction (for debuging purpose).
-void PrintMoveInstr(MoveInstr* instr) {
-    char regs[3];
-    switch(instr->regs) {
-        case AX:
-            strncpy(regs, "AX", 2);
-            break;
-        case AL:
-            strncpy(regs, "AL", 2);
-            break;
-        case CL:
-            strncpy(regs, "CL", 2);
-            break;
-        case DL:
-            strncpy(regs, "DL", 2);
-            break;
-        case BL:
-            strncpy(regs, "BL", 2);
-            break;
-        case AH:
-            strncpy(regs, "AH", 2);
-            break;
-        case CH:
-            strncpy(regs, "CH", 2);
-            break;
-        case DH:
-            strncpy(regs, "DH", 2);
-            break;
-        case BH:
-            strncpy(regs, "BH", 2);
-            break;
-        case CX:
-            strncpy(regs, "CX", 2);
-            break;
-        case DX:
-            strncpy(regs, "DX", 2);
-            break;
-        case BX:
-            strncpy(regs, "BX", 2);
-            break;
-        case SP:
-            strncpy(regs, "SP", 2);
-            break;
-        case BP:
-            strncpy(regs, "BP", 2);
-            break;
-        case SI:
-            strncpy(regs, "SI", 2);
-            break;
-        case DI:
-            strncpy(regs, "DI", 2);
-            break;
-        case EAX:
-            strncpy(regs, "EAX", 3);
-            break;
-        case ECX:
-            strncpy(regs, "ECX", 3);
-            break;
-        case EDX:
-            strncpy(regs, "EDX", 3);
-            break;
-        case EBX:
-            strncpy(regs, "EBX", 3);
-            break;
-        case ESP:
-            strncpy(regs, "ESP", 3);
-            break;
-        case EBP:
-            strncpy(regs, "EBP", 3);
-            break;
-        case ESI:
-            strncpy(regs, "ESI", 3);
-            break;
-        case EDI:
-            strncpy(regs, "EDI", 3);
-            break;
-        case ES:
-            strncpy(regs, "ES", 2);
-            break;
-        case CS:
-            strncpy(regs, "CS", 2);
-            break;
-        case SS:
-            strncpy(regs, "SS", 2);
-            break;
-        case DS:
-            strncpy(regs, "DS", 2);
-            break;
-        }
-
-    printf("Registers Appended: %s\n", regs);
+// I swear to God  this code look exactly like yan dev code =(.
+// I must find another way to fix this.
+// Although this work, it look very cursed by just looking the function body...
+// Usage: Return enum Registers from string.
+enum Registers GetRegisterEnum(char* regs) {
+    if (strncmp(regs, "AL", 2)==0
+    || strncmp(regs, "al", 2)==0) {
+        return AL;
+    } else if (strncmp(regs, "CL", 2)==0
+    || strncmp(regs, "cl", 2)==0) {
+        return CL;
+    } else if (strncmp(regs, "DL", 2)==0
+    || strncmp(regs, "dl", 2)==0) {
+        return DL;
+    } else if (strncmp(regs, "BL", 2)==0
+    || strncmp(regs, "bl", 2)==0) {
+        return BL;
+    }
+    // H's Regs
+    else if (strncmp(regs, "AH", 2)==0
+    || strncmp(regs, "ah", 2)==0) {
+        return AH;
+    } else if (strncmp(regs, "CH", 2)==0
+    || strncmp(regs, "ch", 2)==0) {
+        return CH;
+    } else if (strncmp(regs, "DH", 2)==0
+    || strncmp(regs, "dh", 2)==0) {
+        return DH;
+    } else if (strncmp(regs, "BH", 2)==0
+    || strncmp(regs, "bh", 2)==0) {
+        return BH;
+    }
+    // X's regs
+    else if (strncmp(regs, "AX", 2)==0
+    || strncmp(regs, "ax", 2)==0) {
+        return AX;
+    } else if (strncmp(regs, "CX", 2)==0
+    || strncmp(regs, "cx", 2)==0) {
+        return CX;
+    } else if (strncmp(regs, "DX", 2)==0||
+    strncmp(regs, "dx", 2)==0) {
+        return DX;
+    } else if (strncmp(regs, "BX", 2)==0
+    || strncmp(regs, "bx", 2)==0) {
+        return BX;
+    } 
+    //P's registers
+    else if (strncmp(regs, "SP", 2)==0
+    || strncmp(regs, "sp", 2)==0) {
+        return SP;
+    } else if (strncmp(regs, "BP", 2)==0
+    || strncmp(regs, "bp", 2)==0) {
+        return BP;
+    } else if (strncmp(regs, "SI", 2)==0
+    || strncmp(regs, "si", 2)==0) {
+        return SI;
+    }     else if (strncmp(regs, "DI", 2)==0
+    || strncmp(regs, "di", 2)==0) {
+        return DI;
+    }
+    return Unknown;
 }
 
 
@@ -137,33 +107,27 @@ BinOp* CreateBinOp(ExprWithoutMoveInstr* left, TokenType type, ExprWithoutMoveIn
 }
 
 
-Token_t peekAST() {
-    while(tok->Key == NULL) {
-        tok = tok->next;
-    }
-    return tok[currAST];
+Token_t* peekAST() {
+    return tok;
 }
 
 uint8_t IsAtEndAST() {
-    return peekAST().t == _EOF_;
+    return peekAST()->t == _EOF_;
 }
 
 uint8_t checkAST(TokenType t) {
     if (IsAtEndAST()) return 0;
-    printf("%i, %i\n", peekAST().t, t);
-    return peekAST().t == t;
+    //printf("%i, %i -> Ret: %i\n", peekAST()->t, t, peekAST()->t == t);
+    return peekAST()->t == t;
 }
 
-Token_t prevAST() {
-    return tok[currAST-1];
+Token_t* prevAST() {
+    return tok->prev;
 }
 
-Token_t nextAST() {
-    while(tok->Key == NULL) {
-        tok = tok->next;
-    }
+Token_t* nextAST() {
     if (!IsAtEndAST()) {
-        currAST++; 
+        return tok->next;
     }
     return prevAST();
 }
@@ -202,11 +166,11 @@ Expr* primary() {
     TokenType t[] = {NUMBER, STRING};
     TokenType t2[] = {REGISTERS};
     if (matchAST(t,2)) {
-        expr->Literal = CreateLiteral(prevAST().Key);
+        expr->Literal = CreateLiteral(prevAST()->Key);
         return expr;
     }
     if (matchAST(t2, 1)) {
-        expr->Literal = CreateLiteral(peekAST().Key);
+        expr->Literal = CreateLiteral(prevAST()->Key);
         return expr;
     }
     expr = expr->next;
@@ -216,9 +180,9 @@ Expr* primary() {
 Expr* unary() {
     TokenType t[1] = {MINUS};
     if (matchAST(t, 1)) {
-        Token_t op = prevAST();
+        Token_t* op = prevAST();
         Expr* right = unary();
-        return (Expr*)CreateUnary(op.t, (ExprWithoutMoveInstr*)right);
+        return (Expr*)CreateUnary(op->t, (ExprWithoutMoveInstr*)right);
     }
     return primary();
 }
@@ -228,9 +192,9 @@ Expr* factor() {
 
     TokenType t[] = {SLASH,STAR};
     while(matchAST(t, 2)) {
-        Token_t op = prevAST();
+        Token_t* op = prevAST();
         ExprWithoutMoveInstr* right = (ExprWithoutMoveInstr*)unary();
-        expr->binop = CreateBinOp(expr, op.t, right);
+        expr->binop = CreateBinOp(expr, op->t, right);
     }
     return (Expr*)expr;
 }
@@ -239,9 +203,9 @@ Expr* term() {
     ExprWithoutMoveInstr* expr = (ExprWithoutMoveInstr*)factor();
     TokenType t[] = {MINUS, PLUS};
     while(matchAST(t, 2)) {
-        Token_t op = prevAST();
+        Token_t* op = prevAST();
         ExprWithoutMoveInstr* right = (ExprWithoutMoveInstr*)factor();
-        expr->binop = CreateBinOp(expr, op.t, right);
+        expr->binop = CreateBinOp(expr, op->t, right);
     }
     return (Expr*)expr;
 }
@@ -251,9 +215,9 @@ Expr* comparison() {
     ExprWithoutMoveInstr* expr = (ExprWithoutMoveInstr*)term();
     TokenType t[] = {GREATER, GREATER_EQUAL, LESS, LESS_EQUAL};
     while(matchAST(t, 4)) {
-        Token_t op = prevAST();
+        Token_t* op = prevAST();
         ExprWithoutMoveInstr* right = (ExprWithoutMoveInstr*)term();
-        expr->binop = CreateBinOp(expr,op.t,right);
+        expr->binop = CreateBinOp(expr,op->t,right);
     }
     return (Expr*)expr;
 }
@@ -262,9 +226,9 @@ Expr* equality() {
     Expr* expr = comparison();
     TokenType t[1] = {EQUAL_EQUAL};
     while(matchAST(t,1)) {
-        Token_t op = prevAST();
+        Token_t* op = prevAST();
         ExprWithoutMoveInstr* right=(ExprWithoutMoveInstr*)comparison();
-        expr->binop = CreateBinOp((ExprWithoutMoveInstr*)expr, op.t, right);
+        expr->binop = CreateBinOp((ExprWithoutMoveInstr*)expr, op->t, right);
     }
     return expr;
 }
@@ -272,10 +236,10 @@ Expr* equality() {
 Expr* movepointer() {
     Expr* expr = equality();
     TokenType t[] = {POINTER};
-    printf("Here: %i, %i\n", POINTER, matchAST(t,1));
+    //printf("Here: %i, %i\n", POINTER, matchAST(t,1));
     while(matchAST(t,1)) {
         Expr* right  = equality();
-        expr->moveinstr = CreateMoveInstr(AX, (ExprWithoutMoveInstr*)expr);
+        expr->moveinstr = CreateMoveInstr(GetRegisterEnum(expr->Literal->Literal), (ExprWithoutMoveInstr*)expr);
     }
     return expr;
 }
