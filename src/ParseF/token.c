@@ -75,18 +75,25 @@ uint8_t match(char exp) {
 }
 
 int count=0;
+
+
+Token_t* CreateToken(TokenType type, char* key) {
+    Token_t* res = malloc(2*sizeof(Token_t));
+    res->Key = malloc(2*strlen(key));
+    strncpy(res->Key, key, strlen(key));
+    res->t = type;
+    res->next = NULL;
+    res->prev = NULL;
+    return res;
+}
+
 Token_t* AddToken(Token_t* t, TokenType type, char* key) {
-    Token_t* tmp=malloc(2*sizeof(Token_t));
-    tmp->Key = malloc(strlen(key));
-    strncpy(tmp->Key, key, strlen(key));
-    tmp->t = type;
-    tmp->next = NULL;
-    if (t == NULL) {return tmp;}
+    Token_t* tmp=CreateToken(type, key);
+    if (!t) { t=tmp; return tmp; }
     Token_t* tmp2 = t;
-    while(tmp2->next != NULL) {
-        tmp2=tmp2->next;
-    }
+    while(tmp2->next != NULL) tmp2 = tmp2->next;
     tmp2->next = tmp;
+    tmp->prev = tmp2;
     return t;
 }
 
@@ -156,7 +163,8 @@ char* substr(char* str, uint32_t start, uint32_t end) {
 
 Token_t* Scan() {
     curr=0;start=0;
-    Token_t* token = malloc(2*sizeof(Token_t));
+    //Token_t* token = malloc(2*sizeof(Token_t));
+    Token_t* token = NULL; // I don't know how this works =|
     while (curr < strlen(code)) {
         start = curr;
         char c = nextChar();

@@ -22,6 +22,7 @@ static int exit_code;
 
 struct Token_t {
     struct Token_t* next;
+    struct Token_t* prev;
     TokenType t;
     char* Key;
 };

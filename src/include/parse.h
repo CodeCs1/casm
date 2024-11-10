@@ -28,6 +28,7 @@ struct ExprWithoutMoveInstr {
     struct BinOp* binop; // Binary Operator
     //End Type
     struct ExprWithoutMoveInstr* next;
+    struct ExprWithoutMoveInstr* last;
     struct Literal* Literal;
 };
 
@@ -39,6 +40,7 @@ struct Expr {
     struct Literal* Literal;
     //End Type
     struct Expr* next;
+    struct Expr* last;
 };
 
 struct Unary {
