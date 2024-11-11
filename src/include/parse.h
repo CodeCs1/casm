@@ -12,33 +12,22 @@ enum Registers {
 };
 
 struct BinOp {
-    struct ExprWithoutMoveInstr* left;
+    struct Expr* left;
     TokenType t;
-    struct ExprWithoutMoveInstr* right;
+    struct Expr* right;
 };
 
 struct MoveInstr {
     enum Registers regs;
-    struct ExprWithoutMoveInstr* expr;
+    struct Expr* expr;
 };
-
-//Same as Expr struct, but without Move Instruction
-// Used for binop only
-struct ExprWithoutMoveInstr {
-    //Type
-    struct BinOp* binop; // Binary Operator
-    //End Type
-    struct ExprWithoutMoveInstr* next;
-    struct ExprWithoutMoveInstr* last;
-    struct Literal* Literal;
-};
-
 
 struct Expr {
     //Type
     struct BinOp* binop; // Binary Operator
     struct MoveInstr* moveinstr; // move instr
     struct Literal* Literal;
+    struct Unary* unary;
     //End Type
     struct Expr* next;
     struct Expr* last;
@@ -46,7 +35,7 @@ struct Expr {
 
 struct Unary {
     TokenType t;
-    struct ExprWithoutMoveInstr* expr;
+    struct Expr* expr;
 };
 
 struct Literal {

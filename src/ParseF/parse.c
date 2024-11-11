@@ -90,15 +90,15 @@ int sizeofToken(Token_t* t) {
     return count;
 }
 
-MoveInstr* CreateMoveInstr(enum Registers regs, struct 
-ExprWithoutMoveInstr* data) {
+MoveInstr* CreateMoveInstr(enum Registers regs,
+Expr* data) {
     MoveInstr* expr = malloc(2*sizeof(MoveInstr));
     expr->regs = regs;
     expr->expr = data;
     return expr;
 }
 
-BinOp* CreateBinOp(ExprWithoutMoveInstr* left, TokenType type, ExprWithoutMoveInstr* right) {
+BinOp* CreateBinOp(Expr* left, TokenType type, Expr* right) {
     BinOp* op = malloc(2*sizeof(BinOp));
     op->left = left;
     op->t = type;
@@ -117,17 +117,20 @@ uint8_t IsAtEndAST() {
 
 uint8_t checkAST(TokenType t) {
     if (IsAtEndAST()) return 0;
-    //printf("%i, %i -> Ret: %i\n", peekAST()->t, t, peekAST()->t == t);
     return peekAST()->t == t;
 }
 
 Token_t* prevAST() {
+    if (!tok->prev) {
+       return tok;
+    }
     return tok->prev;
 }
 
 Token_t* nextAST() {
     if (!IsAtEndAST()) {
-        return tok->next;
+        if (tok->next) tok = tok->next;
+        return tok;
     }
     return prevAST();
 }
@@ -142,7 +145,7 @@ uint8_t matchAST(TokenType t[], size_t sz) {
     return 0;
 }
 
-Unary* CreateUnary(TokenType op, ExprWithoutMoveInstr* right) {
+Unary* CreateUnary(TokenType op, Expr* right) {
     Unary* un = malloc(2*sizeof(Unary));
     un->expr = right;
     un->t = op;
@@ -182,41 +185,43 @@ Expr* unary() {
     if (matchAST(t, 1)) {
         Token_t* op = prevAST();
         Expr* right = unary();
-        return (Expr*)CreateUnary(op->t, (ExprWithoutMoveInstr*)right);
+        Expr* tmp = malloc(2*sizeof(Expr));
+        tmp->unary = CreateUnary(op->t, right);
+        return tmp;
     }
     return primary();
 }
 
 Expr* factor() {
-    ExprWithoutMoveInstr* expr = (ExprWithoutMoveInstr*)unary();
+    Expr* expr = unary();
 
     TokenType t[] = {SLASH,STAR};
     while(matchAST(t, 2)) {
         Token_t* op = prevAST();
-        ExprWithoutMoveInstr* right = (ExprWithoutMoveInstr*)unary();
+        Expr* right = unary();
         expr->binop = CreateBinOp(expr, op->t, right);
     }
-    return (Expr*)expr;
+    return expr;
 }
 
 Expr* term() {
-    ExprWithoutMoveInstr* expr = (ExprWithoutMoveInstr*)factor();
+    Expr* expr = factor();
     TokenType t[] = {MINUS, PLUS};
     while(matchAST(t, 2)) {
         Token_t* op = prevAST();
-        ExprWithoutMoveInstr* right = (ExprWithoutMoveInstr*)factor();
+        Expr* right = factor();
         expr->binop = CreateBinOp(expr, op->t, right);
     }
-    return (Expr*)expr;
+    return expr;
 }
 
 
 Expr* comparison() {
-    ExprWithoutMoveInstr* expr = (ExprWithoutMoveInstr*)term();
+    Expr* expr = term();
     TokenType t[] = {GREATER, GREATER_EQUAL, LESS, LESS_EQUAL};
     while(matchAST(t, 4)) {
         Token_t* op = prevAST();
-        ExprWithoutMoveInstr* right = (ExprWithoutMoveInstr*)term();
+        Expr* right = term();
         expr->binop = CreateBinOp(expr,op->t,right);
     }
     return (Expr*)expr;
@@ -227,8 +232,8 @@ Expr* equality() {
     TokenType t[1] = {EQUAL_EQUAL};
     while(matchAST(t,1)) {
         Token_t* op = prevAST();
-        ExprWithoutMoveInstr* right=(ExprWithoutMoveInstr*)comparison();
-        expr->binop = CreateBinOp((ExprWithoutMoveInstr*)expr, op->t, right);
+        Expr* right=comparison();
+        expr->binop = CreateBinOp(expr, op->t, right);
     }
     return expr;
 }
@@ -236,16 +241,30 @@ Expr* equality() {
 Expr* movepointer() {
     Expr* expr = equality();
     TokenType t[] = {POINTER};
-    //printf("Here: %i, %i\n", POINTER, matchAST(t,1));
     while(matchAST(t,1)) {
         Expr* right  = equality();
-        expr->moveinstr = CreateMoveInstr(GetRegisterEnum(expr->Literal->Literal), (ExprWithoutMoveInstr*)expr);
+        expr->moveinstr = CreateMoveInstr(
+            GetRegisterEnum(expr->Literal->Literal),
+             right);
     }
     return expr;
 }
 
+Expr* AppendParse(Expr* expr, Expr* output) {
+    if (!expr) return output;
+    Expr* ex=expr;
+    while(ex->next) ex = ex->next;
+    ex->next = output;
+    return ex;
+}
+
+
 Expr* parseAST() {
-    return movepointer();
+    Expr* ex = NULL;
+    while(!IsAtEndAST()) {
+        ex = AppendParse(ex, movepointer());
+    }
+    return ex;
 }
 
 void InitparseAST(Token_t* token) {

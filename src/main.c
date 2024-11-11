@@ -144,14 +144,8 @@ int main(int argc, char** argv) {
     InitparseAST(tok);
     Expr* ex = parseAST();
     while(ex != NULL) {
-        if (ex->Literal != NULL) {
-            printf("Literal: %s\n", ex->Literal->Literal);
-        }
-        if (ex->moveinstr != NULL) {
-            printf("register: %i\n", ex->moveinstr->regs);
-        }
-        if (ex->binop != NULL) {
-            printf("Here BinOP");
+        if (ex->moveinstr) {
+            printf("MoveInstr Regs: %i\n", ex->moveinstr->regs);
         }
         ex = ex->next;
     }

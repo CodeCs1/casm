@@ -7,5 +7,4 @@ $casm
 // &<regs = pusha
 // &>regs = popa
 
-bx <- 3
-cx <- 4
+cx <- ax
