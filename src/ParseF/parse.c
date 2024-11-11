@@ -238,11 +238,22 @@ Expr* equality() {
     return expr;
 }
 
-Expr* movepointer() {
+Expr* bitOP() {
     Expr* expr = equality();
+    TokenType t[4] = {AND, OR, XOR, NOT};
+    while(matchAST(t, 4)) {
+        Token_t* op = prevAST();
+        Expr* right = equality();
+        expr->binop = CreateBinOp(expr, op->t, right);
+    }
+    return expr;
+}
+
+Expr* movepointer() {
+    Expr* expr = bitOP(); // we'll use register instead.
     TokenType t[] = {POINTER};
     while(matchAST(t,1)) {
-        Expr* right  = equality();
+        Expr* right  = bitOP();
         expr->moveinstr = CreateMoveInstr(
             GetRegisterEnum(expr->Literal->Literal),
              right);

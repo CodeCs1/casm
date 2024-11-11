@@ -244,6 +244,15 @@ Token_t* Scan() {
                 token = AddToken(token, STRING, substr(code, start+1, curr-1));
                 break;
             case '&':
+                token = AddToken(token, AND, "AND");
+                break;
+            case '^':
+                token = AddToken(token, XOR, "XOR");
+                break;
+            case '|':
+                token = AddToken(token, OR, "OR");
+                break;
+            case '@':
                 nextChar();
                 token = AddToken(token, STACK, substr(code, start, curr));
                 nextChar(); // =)

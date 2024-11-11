@@ -1,10 +1,10 @@
 $casm
 //this is a test
 
-// & (stack pointer)
-// &<cx   = push cx to stack
-// &>cx   = pop cx from stack
-// &<regs = pusha
-// &>regs = popa
+// @ (stack pointer)
+// @<cx   = push cx to stack
+// @>cx   = pop cx from stack
+// @<regs = pusha
+// @>regs = popa
 
-cx <- ax
+ax | ax
