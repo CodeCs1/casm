@@ -17,5 +17,5 @@ To install, run:
 ```
 make install
 ```
-[!NOTE]
-Example file can be found in 'test' folder.
+> [!NOTE]
+> Example file can be found in 'test' folder.
