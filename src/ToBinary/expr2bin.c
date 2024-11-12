@@ -1,6 +1,7 @@
 #include "parse.h"
 #include <ToBinary/expr2bin.h>
 #include <ctype.h>
+#include <endian.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,14 +9,32 @@
 Expr* expr;
 uint8_t* buffer;
 Expr* VisitExpr(Expr* ex);
-void Write2Buffer(char* data);
+int c=0;
 
-uint8_t s_isdigit(char* s) {
-    while(*s) {
-        if (!isdigit(*s)) return 0;
-        s++;
+int countNumber(int input);
+uint8_t checkBase(char* value, uint8_t base);
+uint64_t base2dec(char* str, int base);
+
+void Write2Buffer(uint32_t data, int w) {
+    int i=sizeof(uint16_t);
+    if (w == 0) i--;
+    for (; i>=0; i--) {
+        uint8_t tmp = ((data>>i*8) & 0xff);
+        memcpy(buffer+c, &tmp, 1);
+        c++;
     }
-    return 1;
+}
+
+void CWrite2Buffer(uint8_t data) {
+    memcpy(buffer+c, &data, 1);
+    c++;
+}
+uint8_t s_isdigit(char* s) {
+    if (checkBase(s, 10) || checkBase(s, 16)||
+    checkBase(s, 8) || checkBase(s, 2)) {
+        return 1;
+    }
+    return 0;
 }
 
 uint8_t GetRegValue(enum Registers regs) {
@@ -51,8 +70,6 @@ uint8_t is16Bit(enum Registers regs) {
     }
 }
 
-int countNumber(int input);
-
 Expr* VisitMoveIntr(MoveInstr* intr) {
     Expr* value = VisitExpr(intr->expr);
     if (value->Literal) {
@@ -64,14 +81,23 @@ Expr* VisitMoveIntr(MoveInstr* intr) {
             uint8_t r = GetRegValue(intr->regs);
             if (r == 0xff) { printf("Unknown regs"); exit(1); }
             uint32_t imregs=(11<<4 | w<<3 | r);
-            uint16_t val = atoi(value->Literal->Literal);
+            uint16_t val=0;
+            if (checkBase(value->Literal->Literal, 10)) {
+                val = atoi(value->Literal->Literal);
+            } else if (checkBase(value->Literal->Literal, 2)) {
+                val = (uint16_t)base2dec(value->Literal->Literal, 2);
+            } else if (checkBase(value->Literal->Literal, 8)) {
+                val = (uint16_t)base2dec(value->Literal->Literal, 8);
+            } else if (checkBase(value->Literal->Literal, 16)) {
+                val = (uint16_t)base2dec(value->Literal->Literal, 16);
+            }
             if (w) {
                 imregs <<= 16;
                 if (val > 65535) {
                     printf("16-bit regs out of bound.\n");
                     exit(0);
                 }
-                imregs |= val < 255 ? val << 8 : val;
+                imregs |= val < 256 ? val << 8 : val>>8;
             }
             else { 
                 imregs <<= 8;
@@ -81,7 +107,9 @@ Expr* VisitMoveIntr(MoveInstr* intr) {
                 }
                 imregs |= val;
             }
-            printf("R: %X\n", imregs);
+            Write2Buffer(imregs,w);
+        } else {
+            // Segment Register to Register/Memory: 10001100 | mod 0 reg r/m
         }
     }
     return (Expr*)intr;
@@ -101,11 +129,12 @@ Expr* VisitUnary(Unary* un) {
 }
 
 Expr* VisitKeyW(Keywords* key) {
-
-}
-
-void Write2Buffer(char* data) {
-    memcpy(buffer, data, strlen(data));
+    if (strcmp(key->keywords, "hlt")==0) {
+        CWrite2Buffer(0xF4);
+    } else if (strcmp(key->keywords, "cli")==0) {
+        CWrite2Buffer(0xFA);
+    }
+    return NULL;
 }
 
 Expr* tmp;

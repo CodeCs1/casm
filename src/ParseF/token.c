@@ -156,6 +156,25 @@ uint64_t base2dec(char* str, int base) {
     return output;
 }
 
+
+uint8_t checkBase(char* value, uint8_t base) {
+    if (base > 16) return 0;
+    if (base <= 10) {
+        for (int i=0;i<strlen(value);i++) {
+            if (!(value[i] >= '0' &&
+            value[i] < ('0' + base))) return 0;
+        }
+    } else {
+        for (int i=0;i<strlen(value);i++) {
+            if (!((value[i] >='0' &&
+            value[i] < ('0'+base)) ||
+            (value[i] >= 'A' &&
+            value[i] < ('A'+base-10)))) return 0;
+        }
+    }
+    return 1;
+}
+
 char* substr(char* str, uint32_t start, uint32_t end) {
     char* t1 = &str[start];
     char* t2 = &str[end];

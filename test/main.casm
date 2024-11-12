@@ -1,5 +1,6 @@
 $casm
 // Real mode setup test
-cx <- 3
-cx <- 2
-cx <- 0
+ax <- 0
+sp <- :h7C00
+cli
+hlt
