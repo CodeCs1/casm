@@ -1,10 +1,5 @@
 $casm
-//this is a test
-
-// @ (stack pointer)
-// @<cx   = push cx to stack
-// @>cx   = pop cx from stack
-// @<regs = pusha
-// @>regs = popa
-
-ax | ax
+// Real mode setup test
+cx <- 3
+cx <- 2
+cx <- 0

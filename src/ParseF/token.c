@@ -12,7 +12,7 @@ const char* filename;
 
 static const char* Keywords[] = {
     "loop", "dw", "hlt", "cli",
-    "arch", "place"
+    "arch", "place", "int"
 };
 static const char* Registers[] = {
     // upper case
@@ -99,6 +99,9 @@ Token_t* AddToken(Token_t* t, TokenType type, char* key) {
 
 void AddEndEOF(Token_t* token) {
     AddToken(token, _EOF_, "EOF");
+}
+void AddEOL(Token_t* token) {
+    AddToken(token, _EOL_, "EOL");
 }
 
 char peek() {
@@ -291,7 +294,7 @@ Token_t* Scan() {
                     char* t = substr(code,start,curr);
                     int i=0;
                     for (i=0;i<56;i++) {
-                        if (i < 6) {
+                        if (i < 7) {
                             if (strcmp(t,Keywords[i])==0) {
                                 token = AddToken(token, KEYWORDS, t);
                                 break;
@@ -302,7 +305,7 @@ Token_t* Scan() {
                             break;
                         }
                     }
-                    if (i >= 62) {
+                    if (i >= 63) {
                         token = AddToken(token, IDENTIFIER, t);
                     }
                     

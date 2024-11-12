@@ -13,11 +13,9 @@ typedef enum {
     POINTER /*<-*/, LAMBDA /*=>*/,
     PLUS, MINUS, STAR, SLASH,
     NUMBER, STRING, KEYWORDS,
-
     AND,OR,XOR,NOT, /*Bit-wise operation*/
-
     IDENTIFIER, REGISTERS, STACK,
-    _EOF_
+    _EOF_, _EOL_
 }TokenType;
 
 static int exit_code;

@@ -28,6 +28,7 @@ struct Expr {
     struct MoveInstr* moveinstr; // move instr
     struct Literal* Literal;
     struct Unary* unary;
+    struct Keywords* key;
     //End Type
     struct Expr* next;
     struct Expr* last;
@@ -42,7 +43,9 @@ struct Literal {
     char* Literal;
 };
 
-
+struct Keywords {
+    char* keywords;
+};
 
 typedef struct BinOp BinOp;
 typedef struct Expr Expr;
@@ -50,7 +53,9 @@ typedef struct MoveInstr MoveInstr;
 typedef struct ExprWithoutMoveInstr ExprWithoutMoveInstr;
 typedef struct Unary Unary;
 typedef struct Literal Literal;
+typedef struct Keywords Keywords;
 
 // parse tokenized token into AST ??
 void InitparseAST(Token_t*);
 Expr* parseAST();
+void AddEOL(Token_t*);

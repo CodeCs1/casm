@@ -11,4 +11,7 @@ enable_testing()
 add_test(NAME Tokenizer_test COMMAND casm -i test/main.casm -o test/main)
 
 include_directories(src/include)
-add_executable(casm src/main.c src/ParseF/token.c src/ParseF/parse.c)
+add_executable(casm src/main.c 
+src/ParseF/token.c 
+src/ParseF/parse.c
+src/ToBinary/expr2bin.c)

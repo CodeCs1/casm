@@ -73,10 +73,25 @@ enum Registers GetRegisterEnum(char* regs) {
     } else if (strncmp(regs, "SI", 2)==0
     || strncmp(regs, "si", 2)==0) {
         return SI;
-    }     else if (strncmp(regs, "DI", 2)==0
+    } else if (strncmp(regs, "DI", 2)==0
     || strncmp(regs, "di", 2)==0) {
         return DI;
+    } 
+    // S's segment
+    else if (strncmp(regs, "ES", 2)==0
+    || strncmp(regs, "es", 2)==0) {
+        return ES;
+    } else if (strncmp(regs, "SS", 2)==0
+    || strncmp(regs, "ss", 2)==0) {
+        return ES;
+    } else if (strncmp(regs, "DS", 2)==0
+    || strncmp(regs, "ds", 2)==0) {
+        return ES;
+    } else if (strncmp(regs, "CS", 2)==0
+    || strncmp(regs, "cs", 2)==0) {
+        return ES;
     }
+
     return Unknown;
 }
 
@@ -122,7 +137,7 @@ uint8_t checkAST(TokenType t) {
 
 Token_t* prevAST() {
     if (!tok->prev) {
-       return tok;
+        return tok;
     }
     return tok->prev;
 }
@@ -158,6 +173,12 @@ Literal* CreateLiteral(char* value) {
     return lit;
 }
 
+Keywords* CreateKey(char* key) {
+    Keywords* keyw = malloc(2*sizeof(Keywords));
+    keyw->keywords = key;
+    return keyw;
+}
+
 void Error() {
     printf("Error detected.\n");
     exit_code=-1;
@@ -166,16 +187,17 @@ void Error() {
 
 Expr* primary() {
     Expr* expr=malloc(2*sizeof(Expr));
-    TokenType t[] = {NUMBER, STRING};
-    TokenType t2[] = {REGISTERS};
-    if (matchAST(t,2)) {
+    TokenType t[] = {NUMBER, STRING,REGISTERS};
+    TokenType t2[] = {KEYWORDS};
+    if (matchAST(t,3)) {
         expr->Literal = CreateLiteral(prevAST()->Key);
         return expr;
     }
     if (matchAST(t2, 1)) {
-        expr->Literal = CreateLiteral(prevAST()->Key);
+        expr->key = CreateKey(prevAST()->Key);
         return expr;
     }
+
     expr = expr->next;
     return expr;
 }
@@ -262,17 +284,20 @@ Expr* movepointer() {
 }
 
 Expr* AppendParse(Expr* expr, Expr* output) {
-    if (!expr) return output;
+    if (!expr) { expr = output; return expr; }
     Expr* ex=expr;
     while(ex->next) ex = ex->next;
     ex->next = output;
-    return ex;
+    return expr;
 }
-
 
 Expr* parseAST() {
     Expr* ex = NULL;
     while(!IsAtEndAST()) {
+        if (peekAST()->t == _EOL_) {
+            nextAST();
+            continue;
+        }
         ex = AppendParse(ex, movepointer());
     }
     return ex;
@@ -280,5 +305,4 @@ Expr* parseAST() {
 
 void InitparseAST(Token_t* token) {
     tok = token;
-    countAST = sizeofToken(token);
 }

@@ -2,6 +2,7 @@
     CASM (Code-dev's Assembly language)
     Used to learn about lower level thing.
 */
+#include "ToBinary/expr2bin.h"
 #include <stddef.h>
 #include <time.h>
 #include <stdlib.h>
@@ -102,7 +103,7 @@ int main(int argc, char** argv) {
     clock_t begin = clock();
     struct args_t t;
     t.mode = 0;
-    t.outf = "-";
+    t.outf = "a.bin";
     t.inf = malloc(2*sizeof(uint64_t));
     argp_parse(&argp, argc, argv, 0, 0, &t);
 
@@ -136,24 +137,30 @@ int main(int argc, char** argv) {
         Token_t* tmp = Scan();
         AppendToken_Pointer2Pointer(tok, tmp);
         IncreaseLine();
+        AddEOL(tok);
     }
     AddEndEOF(tok);
     tok = tok->next; // We don't care the first element =)
-    // revered
 
+    // revered
     InitparseAST(tok);
     Expr* ex = parseAST();
-    while(ex != NULL) {
-        if (ex->moveinstr) {
-            printf("MoveInstr Regs: %i\n", ex->moveinstr->regs);
-        }
-        ex = ex->next;
-    }
+    ConverterInit(ex);
+    uint8_t* res = Convert2Bin();
 
+
+    FILE* save = fopen(t.outf, "wb");
+    if (!save) { printf("Error!"); return 0;}
+    fwrite(res, 1, 512, save);
+    
     clock_t end = clock();
     time_spent = (double)(end-begin)/CLOCKS_PER_SEC;
 
+
+
     free(tok);
+    fclose(save);
+    //free(ex);
 
     return 0;
 }
