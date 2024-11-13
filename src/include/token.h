@@ -30,6 +30,25 @@ struct Token_t {
 
 typedef struct Token_t Token_t;
 
+static const char* Registers[] = {
+    // upper case
+    "AL","CL","DL","BL",
+    "AH","CH","DH","BH",
+    "AX","CX","DX", "BX", 
+    "SP","BP","SI","DI",
+    "EAX", "ECX", "EDX", 
+    "EBX", "ESP", "EBP","ESI", 
+    "EDI", "ES", "CS", "SS", "DS",
+    //lower case
+    "al","cl","dl","bl",
+    "ah","ch","dh","bh",
+    "ax","cx","dx", "bx", 
+    "sp","bp","si","di",
+    "eax", "ecx", "edx", 
+    "ebx", "esp", "ebp","esi", 
+    "edi", "es", "cs", "ss", "ds"
+};
+
 //Initialize Tokenizer
 void TokenInit(char* sources, char* file);
 // Scan sources

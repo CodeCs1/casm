@@ -113,12 +113,14 @@ Expr* data) {
     return expr;
 }
 
-BinOp* CreateBinOp(Expr* left, TokenType type, Expr* right) {
+Expr* CreateBinOp(Expr* left, TokenType type, Expr* right) {
     BinOp* op = malloc(2*sizeof(BinOp));
+    Expr* exp = malloc(2*sizeof(Expr));
     op->left = left;
     op->t = type;
     op->right = right;
-    return op;
+    exp->binop=op;
+    return exp;
 }
 
 
@@ -169,13 +171,17 @@ Unary* CreateUnary(TokenType op, Expr* right) {
 
 Literal* CreateLiteral(char* value) {
     Literal* lit = malloc(2*sizeof(Literal));
-    lit->Literal = value;
+    //lit->Literal = value;
+    lit->Literal=malloc(2*strlen(value));
+    strncpy(lit->Literal, value, strlen(value));
     return lit;
 }
 
 Keywords* CreateKey(char* key) {
     Keywords* keyw = malloc(2*sizeof(Keywords));
-    keyw->keywords = key;
+    //keyw->keywords = key;
+    keyw->keywords=malloc(2*strlen(key));
+    strncpy(keyw->keywords, key, strlen(key));
     return keyw;
 }
 
@@ -197,8 +203,7 @@ Expr* primary() {
         expr->key = CreateKey(prevAST()->Key);
         return expr;
     }
-
-    expr = expr->next;
+    Error();
     return expr;
 }
 
@@ -215,58 +220,59 @@ Expr* unary() {
 }
 
 Expr* factor() {
-    Expr* expr = unary();
-
+    Expr* expr=unary();
     TokenType t[] = {SLASH,STAR};
     while(matchAST(t, 2)) {
         Token_t* op = prevAST();
         Expr* right = unary();
-        expr->binop = CreateBinOp(expr, op->t, right);
+        expr = CreateBinOp(expr, op->t, right);
     }
     return expr;
 }
 
 Expr* term() {
-    Expr* expr = factor();
+    Expr* expr=factor();
     TokenType t[] = {MINUS, PLUS};
     while(matchAST(t, 2)) {
         Token_t* op = prevAST();
         Expr* right = factor();
-        expr->binop = CreateBinOp(expr, op->t, right);
+        expr = CreateBinOp(expr, op->t, right);
     }
     return expr;
 }
 
 
 Expr* comparison() {
-    Expr* expr = term();
+    //Expr* ETerm = term();
+    Expr* expr=term();
     TokenType t[] = {GREATER, GREATER_EQUAL, LESS, LESS_EQUAL};
     while(matchAST(t, 4)) {
         Token_t* op = prevAST();
         Expr* right = term();
-        expr->binop = CreateBinOp(expr,op->t,right);
+        expr = CreateBinOp(expr,op->t,right);
     }
-    return (Expr*)expr;
+    return expr;
 }
 
 Expr* equality() {
-    Expr* expr = comparison();
+    //Expr* ECompare = comparison();
+    Expr* expr=comparison();
     TokenType t[1] = {EQUAL_EQUAL};
     while(matchAST(t,1)) {
         Token_t* op = prevAST();
-        Expr* right=comparison();
-        expr->binop = CreateBinOp(expr, op->t, right);
+        Expr* right = comparison();
+        expr = CreateBinOp(expr, op->t, right);
     }
     return expr;
 }
 
 Expr* bitOP() {
-    Expr* expr = equality();
+    Expr* expr=equality();
     TokenType t[4] = {AND, OR, XOR, NOT};
     while(matchAST(t, 4)) {
         Token_t* op = prevAST();
         Expr* right = equality();
-        expr->binop = CreateBinOp(expr, op->t, right);
+        expr = CreateBinOp(expr, op->t, right);
     }
     return expr;
 }

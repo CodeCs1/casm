@@ -14,24 +14,6 @@ static const char* Keywords[] = {
     "loop", "dw", "hlt", "cli",
     "arch", "place", "int"
 };
-static const char* Registers[] = {
-    // upper case
-    "AL","CL","DL","BL",
-    "AH","CH","DH","BH",
-    "AX","CX","DX", "BX", 
-    "SP","BP","SI","DI",
-    "EAX", "ECX", "EDX", 
-    "EBX", "ESP", "EBP","ESI", 
-    "EDI", "ES", "CS", "SS", "DS",
-    //lower case
-    "al","cl","dl","bl",
-    "ah","ch","dh","bh",
-    "ax","cx","dx", "bx", 
-    "sp","bp","si","di",
-    "eax", "ecx", "edx", 
-    "ebx", "esp", "ebp","esi", 
-    "edi", "es", "cs", "ss", "ds"
-};
 
 
 int line=2;
@@ -162,7 +144,7 @@ uint8_t checkBase(char* value, uint8_t base) {
     if (base <= 10) {
         for (int i=0;i<strlen(value);i++) {
             if (!(value[i] >= '0' &&
-            value[i] < ('0' + base))) return 0;
+            value[i] < ('0' + base))) return 0; 
         }
     } else {
         for (int i=0;i<strlen(value);i++) {
@@ -262,7 +244,6 @@ Token_t* Scan() {
                     ErrorReport(line, start+1, 69, "Unterminated Strings.");
                 }
                 nextChar();
-                printf("STRING: %s\n", substr(code, start+1, curr-1));
                 token = AddToken(token, STRING, substr(code, start+1, curr-1));
                 break;
             case '&':

@@ -1,14 +1,13 @@
 #include "parse.h"
+#include "token.h"
 #include <ToBinary/expr2bin.h>
-#include <ctype.h>
-#include <endian.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 Expr* expr;
 uint8_t* buffer;
-Expr* VisitExpr(Expr* ex);
+Result* VisitExpr(Expr* ex);
 int c=0;
 
 int countNumber(int input);
@@ -69,66 +68,107 @@ uint8_t is16Bit(enum Registers regs) {
         default: return 0xff;
     }
 }
-
-Expr* VisitMoveIntr(MoveInstr* intr) {
-    Expr* value = VisitExpr(intr->expr);
-    if (value->Literal) {
-        uint8_t t = s_isdigit(value->Literal->Literal);
-        if (t) { // Immediate to Register
-            uint8_t w=is16Bit(intr->regs);
-            if (w == 0xff) { printf("Unknown regs"); exit(1); }
-            //imregs |= w<<3;
-            uint8_t r = GetRegValue(intr->regs);
-            if (r == 0xff) { printf("Unknown regs"); exit(1); }
-            uint32_t imregs=(11<<4 | w<<3 | r);
-            uint16_t val=0;
-            if (checkBase(value->Literal->Literal, 10)) {
-                val = atoi(value->Literal->Literal);
-            } else if (checkBase(value->Literal->Literal, 2)) {
-                val = (uint16_t)base2dec(value->Literal->Literal, 2);
-            } else if (checkBase(value->Literal->Literal, 8)) {
-                val = (uint16_t)base2dec(value->Literal->Literal, 8);
-            } else if (checkBase(value->Literal->Literal, 16)) {
-                val = (uint16_t)base2dec(value->Literal->Literal, 16);
+Result* VisitMoveIntr(MoveInstr* intr) {
+    Result* value = VisitExpr(intr->expr);
+    if (value->number_defined) {
+        uint8_t w = is16Bit(intr->regs);
+        if (w == 0xff) { printf("Unknown regs"); exit(1); }
+        uint8_t r = GetRegValue(intr->regs);
+        if (r == 0xff) { printf("Unknown regs"); exit(1); }
+        uint32_t imregs=(11<<4 | w<<3 | r);
+        uint16_t val=value->numbers;
+        if (w) {
+            imregs <<= 16;
+            if (val > 65535) {
+                printf("16-bit regs out of bound.\n");
+                exit(0);
             }
-            if (w) {
-                imregs <<= 16;
-                if (val > 65535) {
-                    printf("16-bit regs out of bound.\n");
-                    exit(0);
-                }
-                imregs |= val < 256 ? val << 8 : val>>8;
-            }
-            else { 
-                imregs <<= 8;
-                if (val > 255) {
-                    printf("8-bit regs out of bound.\n");
-                    exit(0);
-                }
-                imregs |= val;
-            }
-            Write2Buffer(imregs,w);
+            imregs |= val < 256 ? val << 8 : val>>8;
         } else {
-            // Segment Register to Register/Memory: 10001100 | mod 0 reg r/m
+            imregs <<= 8;
+            if (val > 255) {
+                printf("8-bit regs out of bound.\n");
+                exit(0);
+            }
+            imregs |= val;
         }
+        Write2Buffer(imregs, w);
     }
-    return (Expr*)intr;
+    return NULL;
 }
-Expr* VisitLiteral(Literal* lit) {
-    Expr* tmp = realloc(NULL,2*sizeof(Expr));
-    tmp->Literal=lit;
+Result* VisitLiteral(Literal* lit) {
+    Result* tmp = realloc(NULL,2*sizeof(Expr));
+    //printf("%s\n", lit->Literal);
+    if (s_isdigit(lit->Literal)) {
+        //tmp->numbers = atof(lit->Literal);
+        double d=0;
+        if (checkBase(lit->Literal, 10)) {
+            d = atof(lit->Literal);
+        } else if (checkBase(lit->Literal, 2)) {
+            d = (float)base2dec(lit->Literal, 2);
+        } else if (checkBase(lit->Literal, 8)) {
+            d = (float)base2dec(lit->Literal, 8);
+        } else if (checkBase(lit->Literal, 16)) {
+            d = (float)base2dec(lit->Literal, 16);
+        }
+        tmp->numbers=d;
+        tmp->number_defined=1;
+    } else {
+        tmp->string = malloc(2*strlen(lit->Literal));
+        strncpy(tmp->string, lit->Literal, strlen(lit->Literal));
+        tmp->str_defined=1;
+    }
     return tmp;
 }
 
-Expr* VisitBinOP(BinOp* op) {
-    Expr* ex = VisitExpr(op->right);
+Result* VisitBinOP(BinOp* op) {
+    Result* right = VisitExpr(op->right);
+    Result* left = VisitExpr(op->left);
+    Result* tmp = realloc(NULL,2*sizeof(Expr));
+
+    switch(op->t) {
+        case MINUS:
+            tmp->number_defined=1;
+            tmp->numbers = left->numbers-right->numbers;
+            break;
+        case SLASH:
+            tmp->number_defined=1;
+            if (right->numbers==0) {
+                printf("ERROR: Division by 0\n");
+                exit_code=1;
+                exit(1);
+            }
+            tmp->numbers = left->numbers/right->numbers;
+            break;
+        case PLUS: // we only deal with number, not string nor register yet
+            tmp->number_defined=1;
+            tmp->numbers=left->numbers + right->numbers;
+            break;
+    }
+
+    return tmp;
 }
 
-Expr* VisitUnary(Unary* un) {
-
+uint8_t checkNumber(Result* res) {
+    if (res->number_defined==1) return 1;
+    exit(1);
 }
 
-Expr* VisitKeyW(Keywords* key) {
+Result* VisitUnary(Unary* un) {
+    Result* expr = VisitExpr(un->expr);
+    Result* tmp=malloc(2*sizeof(Result));
+    switch(un->t) {
+        case MINUS:
+            checkNumber(expr);
+            tmp->numbers = -expr->numbers;
+            return tmp;
+        default: // BANG Doesn't exist.
+            return expr;
+    }
+    return NULL;
+}
+
+Result* VisitKeyW(Keywords* key) {
     if (strcmp(key->keywords, "hlt")==0) {
         CWrite2Buffer(0xF4);
     } else if (strcmp(key->keywords, "cli")==0) {
@@ -137,8 +177,8 @@ Expr* VisitKeyW(Keywords* key) {
     return NULL;
 }
 
-Expr* tmp;
-Expr* VisitExpr(Expr* ex) {
+Result* tmp;
+Result* VisitExpr(Expr* ex) {
     if (!ex) return tmp;
     if (ex->moveinstr) tmp=VisitMoveIntr(ex->moveinstr);
     if (ex->binop) tmp=VisitBinOP(ex->binop);
