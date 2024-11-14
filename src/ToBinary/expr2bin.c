@@ -28,9 +28,14 @@ void CWrite2Buffer(uint8_t data) {
     memcpy(buffer+c, &data, 1);
     c++;
 }
+char* substr(char* str, uint32_t start, uint32_t end);
 uint8_t s_isdigit(char* s) {
-    if (checkBase(s, 10) || checkBase(s, 16)||
+    /*if (checkBase(s, 10) || checkBase(s, 16)||
     checkBase(s, 8) || checkBase(s, 2)) {
+        return 1;
+    }*/
+    if (s[0] == 'h' || s[0] == 'b' || s[0] == 'o' || 
+    checkBase(s, 10)) {
         return 1;
     }
     return 0;
@@ -38,10 +43,10 @@ uint8_t s_isdigit(char* s) {
 
 uint8_t GetRegValue(enum Registers regs) {
     switch(regs) {
-        case AX: case AL: return 0;
-        case CX: case CL: return 1;
-        case DX: case DL: return 2;
-        case BX: case BL: return 3;
+        case AX: case AL: case ES: return 0;
+        case CX: case CL: case CS: return 1;
+        case DX: case DL: case SS: return 2;
+        case BX: case BL: case DS: return 3;
         case SP: case AH: return 4;
         case BP: case CH: return 5;
         case SI: case DH: return 6;
@@ -68,6 +73,15 @@ uint8_t is16Bit(enum Registers regs) {
         default: return 0xff;
     }
 }
+
+uint8_t isSegment(enum Registers regs) {
+    switch(regs) {
+        case SS: case ES: case DS: case CS: return 1;
+        default: return 0; 
+    }
+}
+enum Registers GetRegisterEnum(char* regs);
+
 Result* VisitMoveIntr(MoveInstr* intr) {
     Result* value = VisitExpr(intr->expr);
     if (value->number_defined) {
@@ -91,25 +105,48 @@ Result* VisitMoveIntr(MoveInstr* intr) {
                 exit(0);
             }
             imregs |= val;
-        }
+        } 
         Write2Buffer(imregs, w);
+    } else {
+        if (isSegment(intr->regs)) {// Reg to Seg (segment can only go with 16, not 8)
+            //10001100 | mod (2) 0 reg r/m (3)
+            // We'll use mod= 11(2) for easy implementation
+            uint8_t mod=3, rm=0;
+
+            switch(GetRegisterEnum(value->string)) {
+                case AL: case AX: rm=0; break;
+                case CL: case CX: rm=1; break;
+                case DL: case DX: rm=2; break;
+                case BL: case BX: rm=3; break;
+                case AH: case SP: rm=4; break;
+                case CH: case BP: rm=5; break;
+                case DH: case SI: rm=6; break;
+                case BH: case DI: rm=7; break;
+                default: break;
+            }
+
+            uint32_t imregs = (0x8E << 8) | mod << 6 | GetRegValue(intr->regs) << 3 | rm;
+            Write2Buffer(imregs, 0);
+        } else { //Seg 2 Reg | Reg 2 Reg
+
+        }
     }
     return NULL;
 }
 Result* VisitLiteral(Literal* lit) {
     Result* tmp = realloc(NULL,2*sizeof(Expr));
-    //printf("%s\n", lit->Literal);
     if (s_isdigit(lit->Literal)) {
-        //tmp->numbers = atof(lit->Literal);
         double d=0;
+        char* sub=substr(lit->Literal, 
+        1, strlen(lit->Literal));
         if (checkBase(lit->Literal, 10)) {
             d = atof(lit->Literal);
-        } else if (checkBase(lit->Literal, 2)) {
-            d = (float)base2dec(lit->Literal, 2);
-        } else if (checkBase(lit->Literal, 8)) {
-            d = (float)base2dec(lit->Literal, 8);
-        } else if (checkBase(lit->Literal, 16)) {
-            d = (float)base2dec(lit->Literal, 16);
+        } else if (lit->Literal[0] == 'b') {
+            d = (float)base2dec(sub, 2);
+        } else if (lit->Literal[0] == 'o') {
+            d = (float)base2dec(sub, 8);
+        } else if (lit->Literal[0] == 'h') {
+            d = (float)base2dec(sub, 16);
         }
         tmp->numbers=d;
         tmp->number_defined=1;
@@ -125,7 +162,6 @@ Result* VisitBinOP(BinOp* op) {
     Result* right = VisitExpr(op->right);
     Result* left = VisitExpr(op->left);
     Result* tmp = realloc(NULL,2*sizeof(Expr));
-
     switch(op->t) {
         case MINUS:
             tmp->number_defined=1;
@@ -140,9 +176,30 @@ Result* VisitBinOP(BinOp* op) {
             }
             tmp->numbers = left->numbers/right->numbers;
             break;
-        case PLUS: // we only deal with number, not string nor register yet
-            tmp->number_defined=1;
-            tmp->numbers=left->numbers + right->numbers;
+        case PLUS:
+            if (left->number_defined && right->number_defined) {
+                tmp->number_defined=1;
+                tmp->numbers=left->numbers + right->numbers;
+            }
+            // if (left->str_defined) {
+            //     if (strncmp(left->string, "@",1)==0) { // stack
+            //         uint8_t imregs=(0x0A << 3);
+            //         if (right->str_defined) { // registers
+            //             enum Registers r=GetRegisterEnum(right->string);
+            //             if (isSegment(r)) { // push segment
+            //                 imregs = 0;
+            //                 imregs = (r << 3) | 6;
+            //             } else {
+            //                 imregs |= GetRegValue(r);
+            //             }
+            //         }
+            //         printf("R: %X\n", imregs);
+            //         CWrite2Buffer(imregs);
+            //         tmp=NULL;
+            //     }
+            // }
+            break;
+        default:
             break;
     }
 
@@ -169,10 +226,16 @@ Result* VisitUnary(Unary* un) {
 }
 
 Result* VisitKeyW(Keywords* key) {
+    Result* args = VisitExpr(key->args);
+    printf("Key: %s\n", key->keywords);
     if (strcmp(key->keywords, "hlt")==0) {
         CWrite2Buffer(0xF4);
     } else if (strcmp(key->keywords, "cli")==0) {
         CWrite2Buffer(0xFA);
+    } else if (strcmp(key->keywords, "int")==0) {
+        uint32_t intr=0xCD<<8;
+        intr |= (uint16_t)args->numbers;
+        Write2Buffer(intr, 0);
     }
     return NULL;
 }

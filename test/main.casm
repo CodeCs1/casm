@@ -1,4 +1,1 @@
 $casm
-// Real mode setup test
-ax <- 1 + 3 + 5
-cx <- :h7C01 - 1

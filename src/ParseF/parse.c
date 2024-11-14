@@ -83,13 +83,13 @@ enum Registers GetRegisterEnum(char* regs) {
         return ES;
     } else if (strncmp(regs, "SS", 2)==0
     || strncmp(regs, "ss", 2)==0) {
-        return ES;
+        return SS;
     } else if (strncmp(regs, "DS", 2)==0
     || strncmp(regs, "ds", 2)==0) {
-        return ES;
+        return DS;
     } else if (strncmp(regs, "CS", 2)==0
     || strncmp(regs, "cs", 2)==0) {
-        return ES;
+        return CS;
     }
 
     return Unknown;
@@ -177,10 +177,11 @@ Literal* CreateLiteral(char* value) {
     return lit;
 }
 
-Keywords* CreateKey(char* key) {
+Keywords* CreateKey(char* key, Expr* args) {
     Keywords* keyw = malloc(2*sizeof(Keywords));
     //keyw->keywords = key;
     keyw->keywords=malloc(2*strlen(key));
+    keyw->args = args;
     strncpy(keyw->keywords, key, strlen(key));
     return keyw;
 }
@@ -191,19 +192,23 @@ void Error() {
     exit(-1);
 }
 
+Expr* bitOP();
+
 Expr* primary() {
     Expr* expr=malloc(2*sizeof(Expr));
-    TokenType t[] = {NUMBER, STRING,REGISTERS};
+    TokenType t[] = {NUMBER, STRING,REGISTERS, STACK};
     TokenType t2[] = {KEYWORDS};
-    if (matchAST(t,3)) {
+
+    if (matchAST(t,4)) {
         expr->Literal = CreateLiteral(prevAST()->Key);
         return expr;
     }
     if (matchAST(t2, 1)) {
-        expr->key = CreateKey(prevAST()->Key);
+        char* key = prevAST()->Key;
+        Expr* tmp = bitOP();
+        expr->key = CreateKey(key, tmp);
         return expr;
     }
-    Error();
     return expr;
 }
 
@@ -296,6 +301,9 @@ Expr* AppendParse(Expr* expr, Expr* output) {
     ex->next = output;
     return expr;
 }
+Expr* express() {
+    return movepointer();
+}
 
 Expr* parseAST() {
     Expr* ex = NULL;
@@ -304,7 +312,7 @@ Expr* parseAST() {
             nextAST();
             continue;
         }
-        ex = AppendParse(ex, movepointer());
+        ex = AppendParse(ex, express());
     }
     return ex;
 }

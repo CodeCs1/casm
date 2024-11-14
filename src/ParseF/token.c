@@ -264,15 +264,15 @@ Token_t* Scan() {
                 switch(nextChar()) {
                     case 'h': 
                         while(!IsAtEnd() && isHex(peek())) nextChar();
-                        token = AddToken(token, NUMBER,substr(code, start+2, curr));
+                        token = AddToken(token, NUMBER,substr(code, start+1, curr));
                         break; //Hex
                     case 'b':
                         while(!IsAtEnd() && isBin(peek())) nextChar();
-                        token = AddToken(token, NUMBER,substr(code, start+2, curr));
+                        token = AddToken(token, NUMBER,substr(code, start+1, curr));
                         break; //Binary
                     case 'o': 
                         while(!IsAtEnd() && isOctal(peek())) nextChar();
-                        token = AddToken(token, NUMBER,substr(code, start+2, curr));
+                        token = AddToken(token, NUMBER,substr(code, start+1, curr));
                         break; //octal
                 }
                 break;
