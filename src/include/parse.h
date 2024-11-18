@@ -22,6 +22,10 @@ struct MoveInstr {
     struct Expr* expr;
 };
 
+struct Group {
+    struct Expr* expr;
+};
+
 struct Expr {
     //Type
     struct BinOp* binop; // Binary Operator
@@ -29,6 +33,8 @@ struct Expr {
     struct Literal* Literal;
     struct Unary* unary;
     struct Keywords* key;
+    struct VarDeclare* var;
+    struct Group* Group;
     //End Type
     struct Expr* next;
     struct Expr* last;
@@ -48,6 +54,11 @@ struct Keywords {
     struct Expr* args; // push cx
 };
 
+struct VarDeclare {
+    char* name;
+    struct Expr* express;
+};
+
 typedef struct BinOp BinOp;
 typedef struct Expr Expr;
 typedef struct MoveInstr MoveInstr;
@@ -55,6 +66,8 @@ typedef struct ExprWithoutMoveInstr ExprWithoutMoveInstr;
 typedef struct Unary Unary;
 typedef struct Literal Literal;
 typedef struct Keywords Keywords;
+typedef struct VarDeclare VarDeclare;
+typedef struct Group Group;
 
 // parse tokenized token into AST ??
 void InitparseAST(Token_t*);

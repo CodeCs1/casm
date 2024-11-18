@@ -7,12 +7,12 @@
 
 static char* code;
 const char* filename;
-
-
+char* substr(char* str, uint32_t start, uint32_t end);
 
 static const char* Keywords[] = {
-    "loop", "dw", "hlt", "cli",
-    "arch", "place", "int"
+    "loop", "word", "hlt", "cli",
+    "arch", "place", "int", "curr", "begin",
+    "byte"
 };
 
 
@@ -30,7 +30,7 @@ int countNumber(int input) {
 void ErrorReport(uint32_t line, uint32_t where,
 uint32_t err_no, char* err_mess) {
     printf("Error %i (%s:%i:%i): %s\n", err_no, filename,line,where, err_mess);
-    printf("%i | %s", line, code);
+    printf("%i | %s", line, code[strlen(code)-1] == '\n' ? code : strncat(code, "\n", 2));
     for (int i = 0;i<countNumber(line)+3+(where-1);i++) printf(" ");
     printf("^\n");
     exit_code=-1;
@@ -294,7 +294,7 @@ Token_t* Scan() {
                     char* t = substr(code,start,curr);
                     int i=0;
                     for (i=0;i<56;i++) {
-                        if (i < 7) {
+                        if (i < 10) {
                             if (strcmp(t,Keywords[i])==0) {
                                 token = AddToken(token, KEYWORDS, t);
                                 break;
@@ -305,7 +305,7 @@ Token_t* Scan() {
                             break;
                         }
                     }
-                    if (i >= 63) {
+                    if (i >= 66) {
                         token = AddToken(token, IDENTIFIER, t);
                     }
                     

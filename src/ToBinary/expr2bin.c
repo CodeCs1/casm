@@ -1,14 +1,18 @@
 #include "parse.h"
 #include "token.h"
 #include <ToBinary/expr2bin.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 Expr* expr;
-uint8_t* buffer;
+Buffer* buffer;
 Result* VisitExpr(Expr* ex);
 int c=0;
+int startExpr=0;
+
+uint32_t place=0;
 
 int countNumber(int input);
 uint8_t checkBase(char* value, uint8_t base);
@@ -19,14 +23,25 @@ void Write2Buffer(uint32_t data, int w) {
     if (w == 0) i--;
     for (; i>=0; i--) {
         uint8_t tmp = ((data>>i*8) & 0xff);
-        memcpy(buffer+c, &tmp, 1);
+        memcpy(buffer->buffer+c, &tmp, 1);
         c++;
+        buffer->size++;
     }
 }
 
 void CWrite2Buffer(uint8_t data) {
-    memcpy(buffer+c, &data, 1);
+    memcpy(buffer->buffer+c, &data, 1);
     c++;
+    buffer->size++;
+}
+
+uint8_t isFloat(char* c) {
+    uint8_t res=0;
+    for (int i=0;i<strlen(c);i++) {
+        if (c[i] == '.') res=1; 
+        else if (isdigit(c[i])) res=2;
+    }
+    return res;
 }
 char* substr(char* str, uint32_t start, uint32_t end);
 uint8_t s_isdigit(char* s) {
@@ -97,7 +112,7 @@ Result* VisitMoveIntr(MoveInstr* intr) {
                 printf("16-bit regs out of bound.\n");
                 exit(0);
             }
-            imregs |= val < 256 ? val << 8 : val>>8;
+            imregs |= val < 256 ? val << 8 : (val & 0xff)<<8 | val>>8;
         } else {
             imregs <<= 8;
             if (val > 255) {
@@ -105,7 +120,7 @@ Result* VisitMoveIntr(MoveInstr* intr) {
                 exit(0);
             }
             imregs |= val;
-        } 
+        }
         Write2Buffer(imregs, w);
     } else {
         if (isSegment(intr->regs)) {// Reg to Seg (segment can only go with 16, not 8)
@@ -133,6 +148,8 @@ Result* VisitMoveIntr(MoveInstr* intr) {
     }
     return NULL;
 }
+
+
 Result* VisitLiteral(Literal* lit) {
     Result* tmp = realloc(NULL,2*sizeof(Expr));
     if (s_isdigit(lit->Literal)) {
@@ -151,9 +168,17 @@ Result* VisitLiteral(Literal* lit) {
         tmp->numbers=d;
         tmp->number_defined=1;
     } else {
-        tmp->string = malloc(2*strlen(lit->Literal));
-        strncpy(tmp->string, lit->Literal, strlen(lit->Literal));
-        tmp->str_defined=1;
+        if (isFloat(lit->Literal)==1) {
+            char* sub=substr(lit->Literal, 
+                    1, strlen(lit->Literal));
+            double d = atof(sub);
+            tmp->number_defined = 1;
+            tmp->numbers=d;
+        } else {
+            tmp->string = malloc(2*strlen(lit->Literal));
+            strncpy(tmp->string, lit->Literal, strlen(lit->Literal));
+            tmp->str_defined=1;
+        }
     }
     return tmp;
 }
@@ -161,11 +186,15 @@ Result* VisitLiteral(Literal* lit) {
 Result* VisitBinOP(BinOp* op) {
     Result* right = VisitExpr(op->right);
     Result* left = VisitExpr(op->left);
-    Result* tmp = realloc(NULL,2*sizeof(Expr));
+    Result* tmp = realloc(NULL,2*sizeof(Result));
+
     switch(op->t) {
         case MINUS:
-            tmp->number_defined=1;
-            tmp->numbers = left->numbers-right->numbers;
+            if (right->number_defined && left->number_defined) {
+                tmp->number_defined=1;
+                tmp->numbers = left->numbers-right->numbers;
+                printf("%f - %f\n", left->numbers, right->numbers);
+            }
             break;
         case SLASH:
             tmp->number_defined=1;
@@ -180,24 +209,8 @@ Result* VisitBinOP(BinOp* op) {
             if (left->number_defined && right->number_defined) {
                 tmp->number_defined=1;
                 tmp->numbers=left->numbers + right->numbers;
+                printf("T: %X + %X\n", (int)left->numbers, (int)right->numbers);
             }
-            // if (left->str_defined) {
-            //     if (strncmp(left->string, "@",1)==0) { // stack
-            //         uint8_t imregs=(0x0A << 3);
-            //         if (right->str_defined) { // registers
-            //             enum Registers r=GetRegisterEnum(right->string);
-            //             if (isSegment(r)) { // push segment
-            //                 imregs = 0;
-            //                 imregs = (r << 3) | 6;
-            //             } else {
-            //                 imregs |= GetRegValue(r);
-            //             }
-            //         }
-            //         printf("R: %X\n", imregs);
-            //         CWrite2Buffer(imregs);
-            //         tmp=NULL;
-            //     }
-            // }
             break;
         default:
             break;
@@ -207,7 +220,7 @@ Result* VisitBinOP(BinOp* op) {
 }
 
 uint8_t checkNumber(Result* res) {
-    if (res->number_defined==1) return 1;
+    if (res) if (res->number_defined==1) return 1;
     exit(1);
 }
 
@@ -217,6 +230,7 @@ Result* VisitUnary(Unary* un) {
     switch(un->t) {
         case MINUS:
             checkNumber(expr);
+            tmp->number_defined=1;
             tmp->numbers = -expr->numbers;
             return tmp;
         default: // BANG Doesn't exist.
@@ -227,7 +241,7 @@ Result* VisitUnary(Unary* un) {
 
 Result* VisitKeyW(Keywords* key) {
     Result* args = VisitExpr(key->args);
-    printf("Key: %s\n", key->keywords);
+    Result* res=NULL;
     if (strcmp(key->keywords, "hlt")==0) {
         CWrite2Buffer(0xF4);
     } else if (strcmp(key->keywords, "cli")==0) {
@@ -236,8 +250,41 @@ Result* VisitKeyW(Keywords* key) {
         uint32_t intr=0xCD<<8;
         intr |= (uint16_t)args->numbers;
         Write2Buffer(intr, 0);
+    } else if (strcmp(key->keywords, "loop")==0) {
+        printf("%f\n", args->numbers);
+        /*for (int i=0;i<(int)args->numbers;i++) {
+            CWrite2Buffer(0);
+        }*/
+    } else if (strcmp(key->keywords, "place")==0) {
+        if (!args) exit(1);
+        if (!args->number_defined) {printf("should be number defined\n"); exit(0);}
+        place = (uint32_t)args->numbers;
+    } else if (strcmp(key->keywords, "begin")==0) {
+        res = calloc(1,sizeof(Result));
+        res->number_defined=1; res->numbers=place+startExpr;
+    } else if (strcmp(key->keywords, "curr")==0) {
+        res = calloc(1,sizeof(Result));
+        res->number_defined=1; res->numbers=place+buffer->size;
+    } else if (strcmp(key->keywords, "word")==0) {
+        Write2Buffer(args->numbers, 0);
+    } else if (strcmp(key->keywords, "byte")==0) {
+        CWrite2Buffer(args->numbers);
     }
-    return NULL;
+    return res;
+}
+
+Result* VisitGroup(Group* gr) {
+    Result* r = VisitExpr(gr->expr);
+    return r;
+}
+
+
+Result* AppendResult(Result* r, Result* r1) {
+    if (!r) return r1;
+    Result* rtmp = r;
+    while(rtmp->next) rtmp = rtmp->next;
+    rtmp->next = r1;
+    return r;
 }
 
 Result* tmp;
@@ -248,10 +295,11 @@ Result* VisitExpr(Expr* ex) {
     if (ex->unary) tmp=VisitUnary(ex->unary);
     if (ex->Literal) tmp=VisitLiteral(ex->Literal);
     if (ex->key) tmp=VisitKeyW(ex->key);
+    if (ex->Group) tmp=VisitGroup(ex->Group);
     return VisitExpr(ex->next);
 }
 
-uint8_t* Convert2Bin() {
+Buffer* Convert2Bin() {
     VisitExpr(expr);
     return buffer;
 }
@@ -259,5 +307,6 @@ uint8_t* Convert2Bin() {
 
 void ConverterInit(Expr* exp) {
     expr = exp;
-    buffer=malloc(1024);
+    buffer=malloc(2*sizeof(Buffer));
+    buffer->buffer=malloc(1024);
 }

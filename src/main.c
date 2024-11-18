@@ -141,22 +141,17 @@ int main(int argc, char** argv) {
     }
     AddEndEOF(tok);
     tok = tok->next; // We don't care the first element =)
-
-    // revered
+    
     InitparseAST(tok);
     Expr* ex = parseAST();
+
     ConverterInit(ex);
-    uint8_t* res = Convert2Bin();
-
-
+    Buffer* res = Convert2Bin();
     FILE* save = fopen(t.outf, "wb");
     if (!save) { printf("Error!"); return 0;}
-    fwrite(res, 1, 512, save);
-    
+    fwrite(res->buffer, 1, res->size, save);
     clock_t end = clock();
     time_spent = (double)(end-begin)/CLOCKS_PER_SEC;
-
-
 
     free(tok);
     fclose(save);

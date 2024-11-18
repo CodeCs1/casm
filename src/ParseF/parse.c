@@ -96,6 +96,7 @@ enum Registers GetRegisterEnum(char* regs) {
 }
 
 
+
 int sizeofToken(Token_t* t) {   
     int count=0;
     while(t != NULL) {
@@ -105,12 +106,14 @@ int sizeofToken(Token_t* t) {
     return count;
 }
 
-MoveInstr* CreateMoveInstr(enum Registers regs,
+Expr* CreateMoveInstr(enum Registers regs,
 Expr* data) {
+    Expr* exp = malloc(2*sizeof(Expr));
     MoveInstr* expr = malloc(2*sizeof(MoveInstr));
     expr->regs = regs;
     expr->expr = data;
-    return expr;
+    exp->moveinstr=expr;
+    return exp;
 }
 
 Expr* CreateBinOp(Expr* left, TokenType type, Expr* right) {
@@ -162,28 +165,48 @@ uint8_t matchAST(TokenType t[], size_t sz) {
     return 0;
 }
 
-Unary* CreateUnary(TokenType op, Expr* right) {
+Expr* CreateUnary(TokenType op, Expr* right) {
+    Expr* exp = malloc(sizeof(Expr));
     Unary* un = malloc(2*sizeof(Unary));
     un->expr = right;
     un->t = op;
-    return un;
+    exp->unary = un;
+    return exp;
 }
 
-Literal* CreateLiteral(char* value) {
+Expr* CreateLiteral(char* value) {
+    Expr* ex = malloc(sizeof(Expr));
     Literal* lit = malloc(2*sizeof(Literal));
     //lit->Literal = value;
     lit->Literal=malloc(2*strlen(value));
     strncpy(lit->Literal, value, strlen(value));
-    return lit;
+    ex->Literal=lit;
+    return ex;
 }
 
-Keywords* CreateKey(char* key, Expr* args) {
+Expr* CreateKey(char* key, Expr* args) {
     Keywords* keyw = malloc(2*sizeof(Keywords));
-    //keyw->keywords = key;
+    Expr* ex = malloc(sizeof(Expr));
     keyw->keywords=malloc(2*strlen(key));
     keyw->args = args;
     strncpy(keyw->keywords, key, strlen(key));
-    return keyw;
+    ex->key = keyw;
+    return ex;
+}
+
+VarDeclare* CreateVar(char* name, Expr* expr) {
+    VarDeclare* var = malloc(2*sizeof(VarDeclare));
+    var->express = expr;
+    var->name = name;
+    return var;
+}
+
+Expr* CreateGroup(Expr* expr) {
+    Expr* ex = malloc(sizeof(Expr));
+    Group* gr = malloc(2*sizeof(Group));
+    gr->expr = expr;
+    ex->Group=gr;
+    return ex;
 }
 
 void Error() {
@@ -192,21 +215,42 @@ void Error() {
     exit(-1);
 }
 
+Token_t* consume(TokenType t, char* mess) {
+    if (checkAST(t)) return nextAST();
+    printf("%s\n", mess);
+    Error();
+    return NULL;
+}
+
+
 Expr* bitOP();
+Expr* express();
+Expr* AppendParse(Expr* expr, Expr* output);
 
 Expr* primary() {
     Expr* expr=malloc(2*sizeof(Expr));
     TokenType t[] = {NUMBER, STRING,REGISTERS, STACK};
     TokenType t2[] = {KEYWORDS};
+    TokenType p[] = {LEFT_PAREN};
 
     if (matchAST(t,4)) {
-        expr->Literal = CreateLiteral(prevAST()->Key);
+        expr = CreateLiteral(prevAST()->Key);
         return expr;
     }
     if (matchAST(t2, 1)) {
         char* key = prevAST()->Key;
-        Expr* tmp = bitOP();
-        expr->key = CreateKey(key, tmp);
+        Expr* tmp = express();
+        if (peekAST()->t == LAMBDA) {
+            nextAST();
+            tmp = AppendParse(tmp, bitOP());
+        }
+        expr = CreateKey(key, tmp);
+        return expr;
+    }
+    if (matchAST(p, 1)) {
+        Expr* tmp = express();
+        consume(RIGHT_PAREN, "Expect Right Paren.\n");
+        expr = CreateGroup(tmp);
         return expr;
     }
     return expr;
@@ -217,8 +261,7 @@ Expr* unary() {
     if (matchAST(t, 1)) {
         Token_t* op = prevAST();
         Expr* right = unary();
-        Expr* tmp = malloc(2*sizeof(Expr));
-        tmp->unary = CreateUnary(op->t, right);
+        Expr* tmp = CreateUnary(op->t, right);
         return tmp;
     }
     return primary();
@@ -241,7 +284,7 @@ Expr* term() {
     while(matchAST(t, 2)) {
         Token_t* op = prevAST();
         Expr* right = factor();
-        expr = CreateBinOp(expr, op->t, right);
+        expr=CreateBinOp(expr, op->t, right);
     }
     return expr;
 }
@@ -287,7 +330,7 @@ Expr* movepointer() {
     TokenType t[] = {POINTER};
     while(matchAST(t,1)) {
         Expr* right  = bitOP();
-        expr->moveinstr = CreateMoveInstr(
+        expr = CreateMoveInstr(
             GetRegisterEnum(expr->Literal->Literal),
              right);
     }
@@ -305,6 +348,27 @@ Expr* express() {
     return movepointer();
 }
 
+
+Expr* VarDeclaration() {
+    TokenType t[] = {EQUAL};
+    Token_t* name = consume(IDENTIFIER, "Expect variable name");
+    Expr* expr = NULL;
+    if (matchAST(t, 1)) expr = express();
+
+    VarDeclare* var = malloc(2*sizeof(VarDeclare));
+    var->express = expr;
+    var->name = name->Key;
+    Expr* tmp = malloc(2*sizeof(Expr));
+    tmp->var = var;
+    return tmp;
+}
+
+Expr* Declare() {
+    TokenType t[] = {IDENTIFIER};
+    if (matchAST(t,1)) return VarDeclaration(); 
+    return express();
+}
+
 Expr* parseAST() {
     Expr* ex = NULL;
     while(!IsAtEndAST()) {
@@ -312,7 +376,7 @@ Expr* parseAST() {
             nextAST();
             continue;
         }
-        ex = AppendParse(ex, express());
+        ex = AppendParse(ex, Declare());
     }
     return ex;
 }
