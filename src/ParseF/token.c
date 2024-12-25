@@ -11,7 +11,7 @@ char* substr(char* str, uint32_t start, uint32_t end);
 
 static const char* Keywords[] = {
     "loop", "word", "hlt", "cli",
-    "arch", "place", "int", "curr", "begin",
+    "arch", "org", "int", "curr", "begin",
     "byte"
 };
 
@@ -260,20 +260,25 @@ Token_t* Scan() {
                 token = AddToken(token, STACK, substr(code, start, curr));
                 nextChar(); // =)
                 break;
-            case ':':
-                switch(nextChar()) {
-                    case 'h': 
+            case '0':
+                switch(peek()) {
+                    case 'x':
+                        nextChar();
                         while(!IsAtEnd() && isHex(peek())) nextChar();
                         token = AddToken(token, NUMBER,substr(code, start+1, curr));
                         break; //Hex
                     case 'b':
+                        nextChar();
                         while(!IsAtEnd() && isBin(peek())) nextChar();
                         token = AddToken(token, NUMBER,substr(code, start+1, curr));
                         break; //Binary
-                    case 'o': 
+                    case 'o':
+                        nextChar(); 
                         while(!IsAtEnd() && isOctal(peek())) nextChar();
                         token = AddToken(token, NUMBER,substr(code, start+1, curr));
                         break; //octal
+                    default: // decimal or other
+                        break;
                 }
                 break;
             case ' ':

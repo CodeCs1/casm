@@ -1,24 +1,6 @@
 $casm
-place :h7c00
+org 0x7c00
 
-// setup stack
-ax <- 0
-ds <- ax
-es <- ax
-ss <- ax
-sp <- :h7c00
-
-//print 'A' char
-ah <- :h0e
-al <- :h41
-bl <- 0
-bh <- 0
-int :h10
-
-// halt the system
+`ax <- 2
 cli
-hlt
-
-// it should be: loop 510 - (curr-begin)
-loop 510-24
-word :h55AA
+hlt`

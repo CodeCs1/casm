@@ -45,11 +45,7 @@ uint8_t isFloat(char* c) {
 }
 char* substr(char* str, uint32_t start, uint32_t end);
 uint8_t s_isdigit(char* s) {
-    /*if (checkBase(s, 10) || checkBase(s, 16)||
-    checkBase(s, 8) || checkBase(s, 2)) {
-        return 1;
-    }*/
-    if (s[0] == 'h' || s[0] == 'b' || s[0] == 'o' || 
+    if (s[0] == 'x' || s[0] == 'b' || s[0] == 'o' || 
     checkBase(s, 10)) {
         return 1;
     }
@@ -162,7 +158,7 @@ Result* VisitLiteral(Literal* lit) {
             d = (float)base2dec(sub, 2);
         } else if (lit->Literal[0] == 'o') {
             d = (float)base2dec(sub, 8);
-        } else if (lit->Literal[0] == 'h') {
+        } else if (lit->Literal[0] == 'x') {
             d = (float)base2dec(sub, 16);
         }
         tmp->numbers=d;
@@ -220,7 +216,7 @@ Result* VisitBinOP(BinOp* op) {
 }
 
 uint8_t checkNumber(Result* res) {
-    if (res) if (res->number_defined==1) return 1;
+    if (res->number_defined==1) return 1;
     exit(1);
 }
 
@@ -255,8 +251,8 @@ Result* VisitKeyW(Keywords* key) {
         /*for (int i=0;i<(int)args->numbers;i++) {
             CWrite2Buffer(0);
         }*/
-    } else if (strcmp(key->keywords, "place")==0) {
-        if (!args) exit(1);
+    } else if (strcmp(key->keywords, "org")==0) {
+        //if (!args) exit(1);
         if (!args->number_defined) {printf("should be number defined\n"); exit(0);}
         place = (uint32_t)args->numbers;
     } else if (strcmp(key->keywords, "begin")==0) {
